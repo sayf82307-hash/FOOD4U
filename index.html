@@ -63,4 +63,72 @@ render();updateCart();
 
 // أداة محلية لإنشاء قائمة مستقلة، دون إرسال بيانات إلى أي خادم.
 (()=>{const $b=id=>document.getElementById(id);let dishes=[];const safe=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));function draw(){const name=$b('restaurantName').value.trim()||'اسم المطعم';$b('builderPreview').innerHTML='<h3>'+safe(name)+'</h3>'+(dishes.length?'<ol>'+dishes.map(d=>'<li>'+safe(d.name)+' — '+d.price.toFixed(2)+' د.م</li>').join('')+'</ol>':'<p>ما زدت حتى طبق دابا. عمّر الخانات واضغط «زِد الطبق».</p>')};$b('restaurantName').addEventListener('input',draw);$b('menuBuilder').addEventListener('submit',e=>{e.preventDefault();const name=$b('dishName').value.trim(),price=Number($b('dishPrice').value);if(!name||!Number.isFinite(price)||price<0||dishes.length>=100)return alert('تأكد من البيانات؛ الحد الأقصى 100 طبق.');dishes.push({name,price});$b('dishName').value='';$b('dishPrice').value='';draw()});$b('clearMenu').addEventListener('click',()=>{dishes=[];draw()});$b('downloadMenu').addEventListener('click',()=>{if(!dishes.length)return alert('زِد طبق واحد على الأقل قبل التحميل.');const name=$b('restaurantName').value.trim()||'قائمة الطعام';const page='<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+safe(name)+'</title><style>body{font-family:system-ui;background:#17191e;color:#fff;max-width:650px;margin:40px auto;padding:20px}h1{color:#e8c879}li{padding:14px;border-bottom:1px solid #555}</style></head><body><h1>'+safe(name)+'</h1><p>قائمة الطعام — الأسعار بالدرهم المغربي</p><ul>'+dishes.map(d=>'<li>'+safe(d.name)+' — '+d.price.toFixed(2)+' د.م</li>').join('')+'</ul></body></html>';const url=URL.createObjectURL(new Blob([page],{type:'text/html;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='food4u-menu.html';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});draw()})();
-</script></body></html>
+</script>
+
+
+<style>
+.food-languages{position:fixed;top:78px;right:12px;z-index:100;display:flex;gap:5px;padding:6px;border:1px solid #ffbd45;border-radius:12px;background:#22272c}
+.food-languages button{padding:8px;border:0;border-radius:8px;background:#34383e;color:white;cursor:pointer}
+.food-languages button.active{background:#ffbd45;color:#111}
+</style>
+<div class="food-languages">
+<button type="button" onclick="setFoodLang('ar')">🇲🇦 AR</button>
+<button type="button" onclick="setFoodLang('fr')">🇫🇷 FR</button>
+<button type="button" onclick="setFoodLang('en')">🇬🇧 EN</button>
+</div>
+<script>
+const foodWords={
+'قائمة الطعام ↓':['Menu ↓','Menu ↓'],
+'اكتشف المطاعم':['Découvrir les restaurants','Discover restaurants'],
+'أنشئ قائمتك':['Créer votre menu','Create your menu'],
+'المجلة المغربية':['Magazine marocain','Moroccan magazine'],
+'لأصحاب المطاعم':['Pour les restaurateurs','For restaurant owners'],
+'قائمة طعام رقمية':['Menu numérique','Digital menu'],
+'اكتشف القائمة ←':['Voir le menu ←','View menu ←'],
+'قائمة المأكولات 🍔':['Notre menu 🍔','Food menu 🍔'],
+'فين ناكلو اليوم؟ 🍲':['Où manger aujourd’hui ? 🍲','Where to eat today? 🍲'],
+'من نحن':['À propos','About'],
+'اتصل بنا':['Contact','Contact'],
+'الأسئلة الشائعة':['FAQ','FAQ'],
+'سياسة الخصوصية':['Confidentialité','Privacy policy'],
+'الشروط والأحكام':['Conditions générales','Terms and conditions'],
+'اسم المطعم':['Nom du restaurant','Restaurant name'],
+'اسم الطبق':['Nom du plat','Dish name'],
+'الكل':['Tout','All'],
+'المقبلات':['Entrées','Starters'],
+'السلطات':['Salades','Salads'],
+'البيتزا':['Pizzas','Pizzas'],
+'البرغر':['Burgers','Burgers'],
+'السندويتشات':['Sandwichs','Sandwiches'],
+'التاكو':['Tacos','Tacos'],
+'الباستا':['Pâtes','Pasta'],
+'الأطباق المغربية':['Plats marocains','Moroccan dishes'],
+'المشاوي':['Grillades','Grilled dishes'],
+'المأكولات البحرية':['Fruits de mer','Seafood'],
+'الفطور':['Petit déjeuner','Breakfast'],
+'الحلويات':['Desserts','Desserts'],
+'العصائر':['Jus','Juices'],
+'المشروبات الساخنة':['Boissons chaudes','Hot drinks'],
+'المشروبات الباردة':['Boissons froides','Cold drinks']
+};
+const foodNodes=new WeakMap();
+function setFoodLang(lang){
+document.documentElement.lang=lang;
+document.documentElement.dir=lang==='ar'?'rtl':'ltr';
+document.querySelectorAll('.food-languages button').forEach((b,i)=>b.classList.toggle('active',['ar','fr','en'][i]===lang));
+const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+let node;
+while((node=walker.nextNode())){
+if(node.parentElement.closest('script,style,.food-languages'))continue;
+if(!foodNodes.has(node))foodNodes.set(node,node.nodeValue);
+const original=foodNodes.get(node);
+const key=original.trim();
+node.nodeValue=lang==='ar'?original:foodWords[key]?original.replace(key,foodWords[key][lang==='fr'?0:1]):original;
+}
+try{localStorage.setItem('food4u-lang',lang)}catch(e){}
+}
+setFoodLang(localStorage.getItem('food4u-lang')||'ar');
+</script>
+
+</body>
+</html>
